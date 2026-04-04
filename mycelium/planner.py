@@ -133,14 +133,19 @@ def _script_plan(description: str) -> list[TaskSpec]:
     # Parse what needs to be computed for each file
     file_tasks = _decompose_file_operations(description, paths)
     for ft in file_tasks:
-        ft.depends_on_names = ["setup_dirs"] if dirs else []
+        if dirs and "setup_dirs" not in ft.depends_on_names:
+            ft.depends_on_names.insert(0, "setup_dirs")
         tasks.append(ft)
 
-    # Wire sequential dependencies between file tasks if they reference each other
+    # Wire cross-file dependencies: if task A reads a path that task B writes, A depends on B
     for i, ft in enumerate(file_tasks):
         for j, other in enumerate(file_tasks):
-            if i != j and other.name in ft.code:
-                ft.depends_on_names.append(other.name)
+            if i != j:
+                other_path = paths[j]
+                # If ft's code reads the other task's output file (opens it for reading)
+                if other_path in ft.code and f"open('{other_path}')" in ft.code:
+                    if other.name not in ft.depends_on_names:
+                        ft.depends_on_names.append(other.name)
 
     # Add verification task
     verify_checks = "\n".join(
