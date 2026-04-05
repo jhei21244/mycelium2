@@ -42,8 +42,11 @@ def create_app(db_path: str = "mycelium.db", agent_count: int = 4) -> FastAPI:
 
     @app.post("/api/goals")
     async def submit_goal(req: GoalRequest):
-        gid = await engine.submit_goal(req.description)
-        return {"goal_id": gid, "status": "active"}
+        try:
+            gid = await engine.submit_goal(req.description)
+            return {"goal_id": gid, "status": "active"}
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
 
     @app.get("/api/goals")
     async def list_goals():

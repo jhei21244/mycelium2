@@ -486,7 +486,11 @@ async function submitGoal() {
       body: JSON.stringify({ description: desc }),
     });
     const data = await resp.json();
-    input.value = '';
+    if (data.error) {
+      alert('Error: ' + data.error);
+    } else {
+      input.value = '';
+    }
   } catch (err) {
     alert('Failed: ' + err.message);
   } finally {

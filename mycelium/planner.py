@@ -49,22 +49,24 @@ async def _llm_plan(description: str, api_key: str) -> list[TaskSpec]:
     Return a JSON array of tasks. Each task has:
     - "name": short snake_case identifier (unique)
     - "description": one-line human description
-    - "code": Python code that accomplishes this task (will be exec'd)
+    - "code": Python code that accomplishes this task (will be exec'd via python3 -c)
     - "priority": float 1.0-5.0 (higher = more important)
     - "depends_on": list of task names this depends on ([] for root tasks)
 
     Rules:
     - Tasks MUST produce real side-effects (write files, create dirs, etc)
-    - Code must be self-contained Python (can import stdlib)
+    - Code must be self-contained Python (can import stdlib only)
     - Create directories before writing files
     - Add a final verification task that checks all outputs exist
-    - Keep it minimal — fewest tasks that correctly accomplish the goal
-    - Return ONLY the JSON array, no markdown fences
+    - Keep code CONCISE — no comments, minimal variable names, no docstrings
+    - Group related small operations into single tasks to reduce total count
+    - Aim for 6-15 tasks total, not one per file
+    - Return ONLY valid JSON array, no markdown fences, no trailing text
     """)
 
     msg = await client.messages.create(
         model="claude-sonnet-4-20250514",
-        max_tokens=2000,
+        max_tokens=8000,
         messages=[{"role": "user", "content": prompt}],
     )
 
